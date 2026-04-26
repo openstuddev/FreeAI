@@ -13,8 +13,6 @@ import { buildSystemConversation } from "./conversations/system.js";
 import { buildStartHandler } from "./handlers/start.js";
 import { buildChatHandler } from "./handlers/chat.js";
 import { installErrorHandler } from "./handlers/errors.js";
-import { buildTriggerLogin } from "./handlers/login.js";
-import { buildWebAppDataHandler } from "./handlers/web-app-data.js";
 
 import { createSubscriptionMiddleware } from "./middleware/subscription.js";
 
@@ -62,15 +60,8 @@ export function createBot({
   // ---- Conversations plugin (provides ctx.conversation API used by menus) ----
   bot.use(conversations());
 
-  // ---- Login dispatcher (Mini App if configured, else fallback conversation) ----
-  const triggerLogin = buildTriggerLogin({ loginHelperUrl: config.loginHelperUrl });
-
   // ---- Build & register the main menu tree ----
-  const mainMenu = buildMainMenu({
-    usersRepo,
-    defaultModel: config.defaultModel,
-    triggerLogin,
-  });
+  const mainMenu = buildMainMenu({ usersRepo, defaultModel: config.defaultModel });
   const modelsMenu = buildModelsMenu({ usersRepo, defaultModel: config.defaultModel });
   const systemMenu = buildSystemMenu({ usersRepo, defaultModel: config.defaultModel });
   const clearMenu = buildClearHistoryMenu({ messagesRepo });
@@ -82,7 +73,15 @@ export function createBot({
   bot.use(mainMenu);
 
   // ---- Register conversation handlers ----
-  bot.use(createConversation(buildLoginConversation({ usersRepo }), "login"));
+  bot.use(
+    createConversation(
+      buildLoginConversation({
+        usersRepo,
+        loginHelperUrl: config.loginHelperUrl,
+      }),
+      "login"
+    )
+  );
   bot.use(createConversation(buildSystemConversation({ usersRepo }), "system"));
 
   // ---- Build the start handler (also called by gate's "I subscribed") ----
@@ -98,17 +97,6 @@ export function createBot({
   });
 
   bot.command("start", startHandler);
-
-  // ---- Mini App token receipt — handled BEFORE chat so it doesn't hit AI ----
-  const webAppDataHandler = buildWebAppDataHandler({ usersRepo, logger });
-  bot.on("message:web_app_data", webAppDataHandler);
-
-  // ---- "Отмена ❌" pressed on the login reply-keyboard ----
-  bot.hears("Отмена ❌", async (ctx) => {
-    await ctx.reply("Откатил. Сыр цел.", {
-      reply_markup: { remove_keyboard: true },
-    });
-  });
 
   const chatHandler = buildChatHandler({
     usersRepo,
