@@ -9,7 +9,7 @@ export function buildModelsMenu({ usersRepo, defaultModel }) {
       range
         .text(`${marker}${m.label}`, async (ctx2) => {
           usersRepo.setModel(ctx2.from.id, m.id);
-          await ctx2.answerCallbackQuery({ text: `Выбрано: ${m.label}` });
+          await ctx2.answerCallbackQuery({ text: `🧀 Выбрано: ${m.label}` });
           ctx2.menu.update(); // re-render checkmark
         })
         .row();

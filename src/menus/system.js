@@ -9,7 +9,7 @@ export function buildSystemMenu({ usersRepo, defaultModel }) {
         .text("✏️ Изменить", async (c) => c.conversation.enter("system"))
         .text("🗑 Удалить", async (c) => {
           usersRepo.setSystemPrompt(c.from.id, null);
-          await c.answerCallbackQuery({ text: "Удалено" });
+          await c.answerCallbackQuery({ text: "🧀 Удалил. Сыр забыл." });
           c.menu.update();
         })
         .row();
@@ -27,7 +27,7 @@ export function buildSystemMenu({ usersRepo, defaultModel }) {
 
 export function currentSystemPromptText(user) {
   if (!user.system_prompt) {
-    return "⚙️ System prompt не задан.";
+    return "📝 System prompt пустой.";
   }
-  return `⚙️ Текущий system prompt:\n\n${user.system_prompt}`;
+  return `📝 Сейчас:\n\n${user.system_prompt}`;
 }

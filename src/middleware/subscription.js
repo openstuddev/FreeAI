@@ -40,7 +40,7 @@ export function createSubscriptionMiddleware({
       logger?.error?.(`getChatMember failed: ${err?.message}`);
       await safeReply(
         ctx,
-        "Не получилось проверить подписку. Попробуй позже."
+        "🪤 Проверка подписки не прошла. Попробуй позже."
       );
       return; // stop propagation
     }
@@ -55,11 +55,11 @@ export function createSubscriptionMiddleware({
     await safeReply(
       ctx,
       [
-        "🔒 Доступ к боту только для подписчиков канала",
+        "🪤 Сыра нет.",
         "",
-        `📢 ${channelHandle}`,
+        `Сначала подпишись на канал, потом возвращайся: 📢 ${channelHandle}`,
         "",
-        "Подпишись и нажми «Я подписался».",
+        "После — жми «✅ Я подписался».",
       ].join("\n"),
       { reply_markup: subscriptionMenu }
     );

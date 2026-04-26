@@ -4,7 +4,7 @@ export function installErrorHandler(bot, logger) {
     logger?.error?.(`grammY error for update ${ctx?.update?.update_id}: ${err.error}`);
     if (err.error?.stack) logger?.error?.(err.error.stack);
     try {
-      await ctx?.reply?.("⚠️ Что-то пошло не так. Попробуй ещё раз.");
+      await ctx?.reply?.("💀 Сыр треснул. Попробуй ещё раз.");
     } catch {}
   });
 }

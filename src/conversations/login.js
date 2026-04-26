@@ -10,13 +10,13 @@ export function buildLoginConversation({ usersRepo }) {
   return async function login(conversation, ctx) {
     await ctx.reply(
       [
-        "🔑 Войти в Puter",
+        "🔑 Достаём ключ от мышеловки",
         "",
-        "1. Открой https://puter.com и войди (или зарегистрируйся).",
+        "1. Открой https://puter.com и войди (или зарегайся).",
         "2. Settings → API Tokens → Create.",
-        "3. Скопируй токен и пришли его следующим сообщением.",
+        "3. Скопируй токен и пришли следующим сообщением.",
         "",
-        `Чтобы прервать — отправь «${CANCEL_TEXT}».`,
+        `Передумал — «${CANCEL_TEXT}».`,
       ].join("\n")
     );
 
@@ -24,7 +24,7 @@ export function buildLoginConversation({ usersRepo }) {
       const reply = await conversation.waitFor("message:text");
       const text = reply.message.text.trim();
       if (text === CANCEL_TEXT || text === "/cancel") {
-        await ctx.reply("Отменено.");
+        await ctx.reply("Откатил. Сыр цел.");
         return;
       }
 
@@ -34,13 +34,13 @@ export function buildLoginConversation({ usersRepo }) {
       if (result.ok) {
         usersRepo.setToken(ctx.from.id, text, result.username);
         await ctx.reply(
-          `✅ Успех! Привет, ${result.username}. Можешь начинать общаться — просто пиши сообщения.`
+          `🧀 Ты в сырной комнате, ${result.username}. Пиши.`
         );
         return;
       }
 
       await ctx.reply(
-        `❌ Токен невалиден (${result.error}). Пришли другой или «${CANCEL_TEXT}».`
+        `🪤 Не пускают. Puter ругается: «${result.error}». Кинь другой токен или «${CANCEL_TEXT}».`
       );
     }
   };

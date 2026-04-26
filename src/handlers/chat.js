@@ -17,7 +17,7 @@ export function buildChatHandler({
 
     if (!user.puter_token) {
       await ctx.reply(
-        "🔒 Сначала войди в Puter. Отправь /start и нажми «🔑 Войти в Puter»."
+        "🪤 Без токена сыра нет. /start → «🔑 Войти в Puter»."
       );
       return;
     }
@@ -55,17 +55,17 @@ export function buildChatHandler({
       if (status === 401 || /unauthorized|invalid token/i.test(msg)) {
         usersRepo.clearToken(tgId);
         await ctx.reply(
-          "🔑 Твой Puter-токен больше не действителен. Войди заново через /start → «🔑 Войти в Puter»."
+          "🪤 Твой Puter-токен протух. /start → «🔑 Войти в Puter»."
         );
         return;
       }
       if (status === 429 || /quota|rate limit/i.test(msg)) {
         await ctx.reply(
-          "⛔ Ты исчерпал свой Puter-лимит. Пополни на puter.com или подожди обновления квоты."
+          "💀 Сырная квота кончилась. Пополни на puter.com или жди обновления."
         );
         return;
       }
-      await ctx.reply("Что-то пошло не так. Попробуй ещё раз позже.");
+      await ctx.reply("💀 Сыр треснул. Попробуй ещё раз через секунду.");
       return;
     }
     stopTyping = true;

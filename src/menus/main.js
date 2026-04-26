@@ -10,7 +10,7 @@ export function buildMainMenu({ usersRepo, defaultModel }) {
     .text(
       (ctx) => {
         const u = usersRepo.getOrCreate(ctx.from.id, defaultModel);
-        return u.puter_token ? "🔑 Перезайти / выйти" : "🔑 Войти в Puter";
+        return u.puter_token ? "🔑 Сменить токен" : "🔑 Войти в Puter";
       },
       async (ctx) => {
         await ctx.conversation.enter("login");
@@ -28,7 +28,7 @@ export function buildMainMenu({ usersRepo, defaultModel }) {
       }
     )
     .row()
-    .text("⚙️ System prompt", async (ctx) => {
+    .text("📝 System prompt", async (ctx) => {
       await ctx.menu.nav("system");
     })
     .row()
@@ -36,7 +36,7 @@ export function buildMainMenu({ usersRepo, defaultModel }) {
       await ctx.menu.nav("clear-history");
     })
     .row()
-    .text("ℹ️ Помощь", async (ctx) => {
+    .text("ℹ️ Как тут жить", async (ctx) => {
       await ctx.editMessageText(helpText(), { parse_mode: undefined });
     });
   return menu;
@@ -44,13 +44,13 @@ export function buildMainMenu({ usersRepo, defaultModel }) {
 
 function helpText() {
   return [
-    "ℹ️ Как пользоваться:",
+    "🧀 Как тут жить:",
     "",
-    "1. Зарегистрируйся на https://puter.com",
-    "2. В Settings → API Tokens создай токен",
-    "3. Здесь нажми «🔑 Войти в Puter» и пришли токен",
-    "4. Выбери модель и просто пиши сообщения",
+    "1. Зарегайся на https://puter.com",
+    "2. Settings → API Tokens → Create",
+    "3. Жми «🔑 Войти в Puter» и пришли токен",
+    "4. Выбирай модель и пиши",
     "",
-    "Все запросы идут через ТВОЙ Puter-аккаунт — ты используешь свой бесплатный лимит / свои деньги, бот ничего не списывает.",
+    "Все запросы идут через ТВОЙ Puter-аккаунт. Бот не платит и с тебя не берёт. Catch — это и есть весь catch.",
   ].join("\n");
 }

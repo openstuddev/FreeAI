@@ -4,13 +4,17 @@ export function buildStartHandler({ usersRepo, defaultModel, mainMenu }) {
   return async function startHandler(ctx) {
     const u = usersRepo.getOrCreate(ctx.from.id, defaultModel);
     const model = findModel(u.model);
+    const firstName = ctx.from?.first_name ?? "сырный гость";
+    const greeting = u.puter_token
+      ? `🧀 С возвращением, ${firstName}.`
+      : `🧀 Привет, ${firstName}. Я — Сыр. Бесплатный AI-бот в Telegram, 500+ моделей.\nCatch: нужен свой Puter-токен. Без него — мышеловка пустая.`;
     const lines = [
-      "💬 *FreeAI Bot*",
+      greeting,
       "",
-      `Текущая модель: ${model ? model.label : u.model}`,
-      `Статус: ${u.puter_token ? "🟢 Залогинен в Puter" : "🔴 Не залогинен"}`,
+      `Модель: ${model ? model.label : u.model}`,
+      `Статус: ${u.puter_token ? "🧀 в деле" : "🪤 не залогинен"}`,
       "",
-      "Выбери действие:",
+      "Жми ниже:",
     ];
     await ctx.reply(lines.join("\n"), {
       reply_markup: mainMenu,
@@ -28,6 +32,6 @@ export async function showAfterSubscriptionCheck(ctx) {
   if (typeof ctx.bot?.startHandler === "function") {
     await ctx.bot.startHandler(ctx);
   } else {
-    await ctx.reply("Готово. Отправь /start.");
+    await ctx.reply("🧀 Готово. Отправь /start.");
   }
 }

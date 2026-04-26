@@ -18,19 +18,19 @@ export function buildSubscriptionMenu(channelHandle, { usersRepo }) {
         const member = await ctx.api.getChatMember(channelHandle, ctx.from.id);
         status = member?.status;
       } catch {
-        await ctx.answerCallbackQuery({ text: "Не удалось проверить. Попробуй ещё раз." });
+        await ctx.answerCallbackQuery({ text: "🪤 Проверка не прошла. Попробуй ещё." });
         return;
       }
 
       if (!isSubscribedStatus(status)) {
         await ctx.answerCallbackQuery({
-          text: "Подписка не найдена. Подпишись и нажми ещё раз.",
+          text: "🪤 Не вижу подписки. Подпишись и жми ещё раз.",
         });
         return;
       }
 
       usersRepo.markSubscriptionVerified(ctx.from.id);
-      await ctx.answerCallbackQuery({ text: "✅ Готово!" });
+      await ctx.answerCallbackQuery({ text: "🧀 Заходи." });
       await ctx.deleteMessage().catch(() => {});
       const { showAfterSubscriptionCheck } = await import("../handlers/start.js");
       await showAfterSubscriptionCheck(ctx);
