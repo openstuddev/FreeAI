@@ -15,6 +15,28 @@ describe("parseConfig", () => {
     expect(cfg.historyMessages).toBe(20);
     expect(cfg.defaultModel).toBe("gpt-5-nano");
     expect(cfg.logLevel).toBe("info");
+    expect(cfg.loginHelperUrl).toBe(null);
+  });
+
+  it("accepts LOGIN_HELPER_URL when https", () => {
+    const cfg = parseConfig({
+      ...baseEnv,
+      LOGIN_HELPER_URL: "https://user.github.io/FreeAI/login.html",
+    });
+    expect(cfg.loginHelperUrl).toBe(
+      "https://user.github.io/FreeAI/login.html"
+    );
+  });
+
+  it("rejects non-https LOGIN_HELPER_URL", () => {
+    expect(() =>
+      parseConfig({ ...baseEnv, LOGIN_HELPER_URL: "http://insecure" })
+    ).toThrow(/https/);
+  });
+
+  it("treats empty LOGIN_HELPER_URL as null", () => {
+    const cfg = parseConfig({ ...baseEnv, LOGIN_HELPER_URL: "   " });
+    expect(cfg.loginHelperUrl).toBe(null);
   });
 
   it("throws when TELEGRAM_BOT_TOKEN missing", () => {

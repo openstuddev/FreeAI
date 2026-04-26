@@ -12,9 +12,7 @@ export function buildLoginConversation({ usersRepo }) {
       [
         "🔑 Достаём ключ от мышеловки",
         "",
-        "1. Открой https://puter.com и войди (или зарегайся).",
-        "2. Settings → API Tokens → Create.",
-        "3. Скопируй токен и пришли следующим сообщением.",
+        "Auth-helper ещё не настроен админом. Если ты уже знаешь свой Puter-токен — пришли его следующим сообщением.",
         "",
         `Передумал — «${CANCEL_TEXT}».`,
       ].join("\n")

@@ -4,8 +4,11 @@ import { findModel } from "../models.js";
 /**
  * Build the main menu. Some buttons rely on per-user state, so labels are
  * computed at render time via dynamic-text functions.
+ *
+ * `triggerLogin(ctx)` is provided by the host wiring; it decides between
+ * Mini-App login and the manual fallback conversation.
  */
-export function buildMainMenu({ usersRepo, defaultModel }) {
+export function buildMainMenu({ usersRepo, defaultModel, triggerLogin }) {
   const menu = new Menu("main")
     .text(
       (ctx) => {
@@ -13,7 +16,7 @@ export function buildMainMenu({ usersRepo, defaultModel }) {
         return u.puter_token ? "🔑 Сменить токен" : "🔑 Войти в Puter";
       },
       async (ctx) => {
-        await ctx.conversation.enter("login");
+        await triggerLogin(ctx);
       }
     )
     .row()

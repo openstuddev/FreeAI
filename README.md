@@ -38,16 +38,47 @@ All config is via environment variables (`.env` is loaded via `dotenv`).
 | `HISTORY_MESSAGES` | `20` | How many last messages to send to AI as context. |
 | `DEFAULT_MODEL` | `gpt-5-nano` | Initial model for new users. |
 | `LOG_LEVEL` | `info` | One of `debug`, `info`, `warn`, `error`. |
+| `LOGIN_HELPER_URL` | — | HTTPS URL of the auth-helper Mini App (`web/login.html` deployed to GitHub Pages or similar). When set, the login flow opens it as a Telegram Web App and the token returns automatically. When unset, falls back to a "paste your token" prompt. |
+| `HTTPS_PROXY` / `HTTP_PROXY` / `NO_PROXY` | — | Optional. Routes all outbound `fetch` (Telegram + Puter) through the given HTTP(S) proxy via undici's `ProxyAgent`. Format: `http://user:pass@host:port`. |
 
 ## How users use the bot
 
 1. The user opens the bot and sends `/start`.
 2. The bot checks subscription to `REQUIRED_CHANNEL`. If not subscribed, it shows a gate with a link to the channel and a "I subscribed" button.
-3. After subscribing, the user taps **🔑 Войти в Puter**, follows the instructions to create a Puter API token, and pastes it.
+3. After subscribing, the user taps **🔑 Войти в Puter**:
+   - With `LOGIN_HELPER_URL` set — a Telegram Mini App opens, redirects to `puter.com` for sign-in, and after success the token comes back to the bot automatically (no copy-paste).
+   - Without `LOGIN_HELPER_URL` — the bot asks the user to paste a Puter token manually (operator-only fallback).
 4. From then on, the user just types messages. The bot forwards them to the user's chosen model on Puter, returns the AI response, and remembers the last 20 messages.
 5. Users can switch model, set a system prompt, or wipe history at any time.
 
-**Important:** every user must create their own Puter token. AI usage is billed to **their** Puter account — the bot operator pays $0 for AI.
+**Important:** every user must have their own Puter account. AI usage is billed to **their** Puter quota — the bot operator pays $0 for AI.
+
+## Auth helper (Mini App)
+
+Puter has no native UI for issuing API tokens (their model is "no API keys" — the JS SDK handles auth via popup). For a Telegram bot we still need each user's token, so we ship a tiny static page in `web/login.html` that:
+
+1. Redirects the user to `https://puter.com/?action=authme&redirectURL=<self>`.
+2. Receives the token via `?token=…` after Puter redirect.
+3. **Inside Telegram:** posts the token back to the bot via `Telegram.WebApp.sendData()` and closes itself.
+4. **In a regular browser:** shows the token with a "Copy" button (manual paste fallback).
+
+### Deploy to GitHub Pages
+
+The repo includes `.github/workflows/pages.yml` which auto-deploys `web/` on every push to `main`/`master`.
+
+1. Push the repo to GitHub (must be **public** for free GH Pages).
+2. **Settings → Pages → Source: GitHub Actions**.
+3. Trigger the workflow once (push or **Actions → Deploy login helper → Run workflow**).
+4. Resulting URL: `https://<your-username>.github.io/<repo-name>/login.html`.
+5. Put it in `.env`:
+   ```env
+   LOGIN_HELPER_URL=https://<your-username>.github.io/<repo-name>/login.html
+   ```
+6. Restart the bot.
+
+### Other hosts
+
+Cloudflare Pages, Vercel, Netlify all work the same — point them at `web/`, deploy, and copy the resulting HTTPS URL into `LOGIN_HELPER_URL`. Telegram requires HTTPS for Web Apps; bare HTTP will be rejected by the bot at startup.
 
 ## Subscription gate
 

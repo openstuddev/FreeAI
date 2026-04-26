@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>🧀 Сыр — войти</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --cheese:    #FFC93C;
+    --rind:      #E89B0E;
+    --crust:     #C77912;
+    --cream:     #FFF8E7;
+    --choco:     #2B1810;
+    --trap:      #E63946;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--cream);
+    color: var(--choco);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  main {
+    width: 100%;
+    max-width: 440px;
+    background: #fff;
+    border: 3px solid var(--choco);
+    border-radius: 18px;
+    box-shadow: 8px 8px 0 var(--choco);
+    padding: 28px 24px;
+    text-align: center;
+  }
+  .mascot {
+    font-size: 72px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  h1 {
+    margin: 0 0 6px;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+  }
+  .sub {
+    margin: 0 0 20px;
+    color: #6b5d50;
+    font-size: 14px;
+  }
+  .msg {
+    margin: 16px 0;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .token {
+    background: var(--cheese);
+    color: var(--choco);
+    border: 2px solid var(--choco);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    word-break: break-all;
+    text-align: left;
+    margin: 14px 0;
+    max-height: 140px;
+    overflow: auto;
+    user-select: all;
+    -webkit-user-select: all;
+  }
+  button {
+    appearance: none;
+    background: var(--cheese);
+    color: var(--choco);
+    border: 2px solid var(--choco);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-weight: 700;
+    width: 100%;
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--choco);
+    transition: transform .08s, box-shadow .08s;
+  }
+  button:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--choco);
+  }
+  button.secondary {
+    background: #fff;
+    margin-top: 10px;
+  }
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 4px solid var(--cheese);
+    border-top-color: var(--choco);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 18px auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .err {
+    background: #ffeaec;
+    border: 2px solid var(--trap);
+    border-radius: 10px;
+    padding: 12px;
+    color: var(--choco);
+    font-size: 14px;
+    margin-top: 12px;
+  }
+  a { color: var(--crust); }
+</style>
+</head>
+<body>
+<main>
+  <div class="mascot" id="mascot">🧀</div>
+  <h1>Сыр</h1>
+  <p class="sub">Бесплатный AI без мышеловки</p>
+  <div id="content">
+    <div class="spinner"></div>
+    <div class="msg">Подгружаемся…</div>
+  </div>
+</main>
+
+<script>
+(function () {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const isMiniApp = !!(tg && tg.initData);
+
+  if (tg) {
+    try { tg.ready(); } catch {}
+    try { tg.expand(); } catch {}
+  }
+
+  const params = new URLSearchParams(location.search);
+  const token = params.get("token");
+  const content = document.getElementById("content");
+
+  if (token) {
+    // Got token from Puter redirect. Clean URL so it doesn't linger in history.
+    history.replaceState({}, "", location.pathname);
+
+    if (isMiniApp) {
+      // Mini App mode: send to bot, close.
+      content.innerHTML =
+        '<div class="msg">🧀 Готово. Закрываю окно.</div>';
+      try {
+        tg.sendData(token);
+      } catch (e) {
+        showError("Не получилось отправить в бота: " + (e && e.message));
+        return;
+      }
+      setTimeout(() => { try { tg.close(); } catch {} }, 400);
+      return;
+    }
+
+    // Browser mode: show token + copy.
+    content.innerHTML =
+      '<div class="msg">🧀 Готово. Скопируй и пришли в бота:</div>' +
+      '<div class="token" id="tok"></div>' +
+      '<button id="copy">Скопировать токен</button>' +
+      '<button class="secondary" id="newtab">Открыть бота в Telegram</button>';
+
+    document.getElementById("tok").textContent = token;
+
+    document.getElementById("copy").addEventListener("click", async () => {
+      const btn = document.getElementById("copy");
+      try {
+        await navigator.clipboard.writeText(token);
+        btn.textContent = "✅ Скопировано";
+      } catch {
+        // Fallback: select text for user to ctrl+c
+        const range = document.createRange();
+        range.selectNodeContents(document.getElementById("tok"));
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        btn.textContent = "Текст выделен — Ctrl+C";
+      }
+    });
+
+    document.getElementById("newtab").addEventListener("click", () => {
+      // Bot username is appended via ?bot=... if present.
+      const bot = new URLSearchParams(location.search).get("bot");
+      window.open(bot ? "https://t.me/" + bot : "https://t.me/", "_blank");
+    });
+    return;
+  }
+
+  // No token in URL → kick off Puter auth flow.
+  content.innerHTML =
+    '<div class="spinner"></div>' +
+    '<div class="msg">Открываем Puter для логина…</div>';
+
+  setTimeout(() => {
+    const back = location.origin + location.pathname + location.search;
+    location.href =
+      "https://puter.com/?action=authme&redirectURL=" + encodeURIComponent(back);
+  }, 350);
+
+  function showError(text) {
+    content.innerHTML =
+      '<div class="err">💀 ' + escapeHtml(text) + "</div>" +
+      '<button onclick="location.reload()">Попробовать ещё</button>';
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+})();
+</script>
+</body>
+</html>
