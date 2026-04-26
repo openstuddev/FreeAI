@@ -18,8 +18,22 @@ import { buildWebAppDataHandler } from "./handlers/web-app-data.js";
 
 import { createSubscriptionMiddleware } from "./middleware/subscription.js";
 
-export function createBot({ config, db, usersRepo, messagesRepo, logger }) {
-  const bot = new Bot(config.telegramBotToken);
+export function createBot({
+  config,
+  db,
+  usersRepo,
+  messagesRepo,
+  logger,
+  proxyAgent,
+}) {
+  // grammY ships its own node-fetch and ignores undici's global dispatcher,
+  // so an HTTPS proxy must be passed in via baseFetchConfig.agent.
+  const bot = new Bot(
+    config.telegramBotToken,
+    proxyAgent
+      ? { client: { baseFetchConfig: { agent: proxyAgent } } }
+      : undefined
+  );
 
   // ---- Plumbing: sessions (must be first) ----
   bot.use(session({ initial: () => ({}) }));

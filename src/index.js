@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { ProxyAgent, setGlobalDispatcher } from "undici";
+import { HttpsProxyAgent } from "https-proxy-agent";
 import { parseConfig } from "./config.js";
 import { openDb } from "./db/index.js";
 import { createUsersRepo } from "./db/users.js";
@@ -24,33 +25,63 @@ function makeLogger(level) {
   };
 }
 
-function maskProxy(url) {
+function parseProxyOrThrow(raw) {
+  // We're strict here: a malformed URL silently breaks everything (the
+  // request goes direct, then ETIMEDOUT 20s later). Better to fail loud.
+  let u;
   try {
-    const u = new URL(url);
-    if (u.password) u.password = "***";
-    return u.toString();
+    u = new URL(raw);
   } catch {
-    return "***";
+    throw new Error(
+      `Invalid proxy URL "${raw}". Expected http://user:pass@host:port`
+    );
   }
+  if (!/^https?:$/.test(u.protocol)) {
+    throw new Error(`Proxy URL must use http:// or https://, got ${u.protocol}`);
+  }
+  if (!u.hostname || !u.port) {
+    throw new Error(
+      `Proxy URL is missing host or port (likely missing "@" between password and host): "${raw}"`
+    );
+  }
+  return u;
+}
+
+function maskProxy(u) {
+  if (u.password) u.password = "***";
+  return u.toString();
 }
 
 async function main() {
   const config = parseConfig(process.env);
   const logger = makeLogger(config.logLevel);
 
-  // Node's native fetch does NOT honor HTTP_PROXY/HTTPS_PROXY by default.
-  // If the env says we have a proxy, route global fetch through it via undici.
-  const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
-  if (proxyUrl) {
-    setGlobalDispatcher(new ProxyAgent(proxyUrl));
-    logger.info(`Using proxy: ${maskProxy(proxyUrl)}`);
+  // Optional outbound proxy. Two layers, because the bot uses two HTTP stacks:
+  //   - Native fetch (puter.js + most modern libs) → undici dispatcher
+  //   - node-fetch (grammY uses this internally)   → https-proxy-agent passed
+  //     into bot.client.baseFetchConfig.agent
+  // Both must be set or one of them silently bypasses the proxy.
+  const rawProxy = (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "").trim();
+  let proxyAgent = null;
+  if (rawProxy) {
+    const u = parseProxyOrThrow(rawProxy);
+    setGlobalDispatcher(new ProxyAgent(rawProxy));
+    proxyAgent = new HttpsProxyAgent(rawProxy);
+    logger.info(`Using proxy: ${maskProxy(u)}`);
   }
 
   const db = openDb(config.databasePath);
   const usersRepo = createUsersRepo(db);
   const messagesRepo = createMessagesRepo(db);
 
-  const bot = createBot({ config, db, usersRepo, messagesRepo, logger });
+  const bot = createBot({
+    config,
+    db,
+    usersRepo,
+    messagesRepo,
+    logger,
+    proxyAgent,
+  });
 
   // Graceful shutdown
   const stop = async (sig) => {
