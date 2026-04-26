@@ -18,24 +18,45 @@ export function buildSubscriptionMenu(channelHandle, { usersRepo }) {
         const member = await ctx.api.getChatMember(channelHandle, ctx.from.id);
         status = member?.status;
       } catch {
-        await ctx.answerCallbackQuery({ text: "🪤 Проверка не прошла. Попробуй ещё." });
+        await safeAnswer(ctx, "🪤 Проверка не прошла. Попробуй ещё.", true);
+        await ctx.reply(
+          `🪤 Не получилось проверить подписку. Попробуй ещё раз через минуту.`
+        );
         return;
       }
 
       if (!isSubscribedStatus(status)) {
-        await ctx.answerCallbackQuery({
-          text: "🪤 Не вижу подписки. Подпишись и жми ещё раз.",
-        });
+        await safeAnswer(ctx, "🪤 Подписки нет — сначала подпишись.", true);
+        await ctx.reply(
+          [
+            `🪤 Не вижу твою подписку на ${channelHandle}.`,
+            "",
+            "Подпишись и тапни «✅ Я подписался» ещё раз.",
+          ].join("\n")
+        );
         return;
       }
 
       usersRepo.markSubscriptionVerified(ctx.from.id);
-      await ctx.answerCallbackQuery({ text: "🧀 Заходи." });
+      await safeAnswer(ctx, "🧀 Заходи.");
       await ctx.deleteMessage().catch(() => {});
       const { showAfterSubscriptionCheck } = await import("../handlers/start.js");
       await showAfterSubscriptionCheck(ctx);
     });
   return menu;
+}
+
+/**
+ * Calls ctx.answerCallbackQuery and swallows the "query too old" 400 from
+ * Telegram (happens when the bot was offline for >30s after the user tapped).
+ * The chat-reply paths above still inform the user — the toast is bonus.
+ */
+async function safeAnswer(ctx, text, showAlert = false) {
+  try {
+    await ctx.answerCallbackQuery({ text, show_alert: showAlert });
+  } catch (e) {
+    // 400 query is too old / invalid — ignore.
+  }
 }
 
 function handleToUrl(handle) {

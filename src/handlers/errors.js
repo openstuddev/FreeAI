@@ -1,6 +1,7 @@
 /**
  * Categorize a grammY error to decide whether to:
- *   - just note it (user blocked us / chat deleted): nothing we can do
+ *   - just note it (user blocked us / chat deleted / stale callback):
+ *     nothing we can do, also no point trying to reply
  *   - re-reply with a generic "🧀 Сыр треснул" message
  *
  * Telegram error codes we care about:
@@ -8,6 +9,10 @@
  *   403 + "user is deactivated"                → account deleted
  *   403 + "bot was kicked from the (super)group" → kicked from a group
  *   400 + "chat not found"                     → chat deleted
+ *   400 + "query is too old"                   → callback query expired
+ *                                                (happens when bot
+ *                                                restarts while users
+ *                                                have stale buttons)
  */
 function classifyError(err) {
   const code = err?.error_code ?? err?.error?.error_code;
@@ -15,6 +20,7 @@ function classifyError(err) {
 
   if (code === 403) return "unreachable";
   if (code === 400 && /chat not found/i.test(desc)) return "unreachable";
+  if (code === 400 && /query is too old|query ID is invalid/i.test(desc)) return "unreachable";
   return "fatal";
 }
 

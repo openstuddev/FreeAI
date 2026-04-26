@@ -57,6 +57,26 @@ describe("installErrorHandler", () => {
     expect(logger.error).not.toHaveBeenCalled();
   });
 
+  it('treats 400 "query is too old" as info', async () => {
+    const bot = makeBot();
+    const logger = { info: vi.fn(), error: vi.fn() };
+    installErrorHandler(bot, logger);
+
+    await bot.fire(
+      makeErr({
+        ctx: { update: { update_id: 8 }, reply: vi.fn() },
+        error: {
+          error_code: 400,
+          description:
+            "Bad Request: query is too old and response timeout expired or query ID is invalid",
+        },
+      })
+    );
+
+    expect(logger.info).toHaveBeenCalledTimes(1);
+    expect(logger.error).not.toHaveBeenCalled();
+  });
+
   it("logs other errors as error and tries to reply", async () => {
     const bot = makeBot();
     const logger = { info: vi.fn(), error: vi.fn() };
