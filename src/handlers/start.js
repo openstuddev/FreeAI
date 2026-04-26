@@ -5,17 +5,30 @@ export function buildStartHandler({ usersRepo, defaultModel, mainMenu }) {
     const u = usersRepo.getOrCreate(ctx.from.id, defaultModel);
     const model = findModel(u.model);
     const firstName = ctx.from?.first_name ?? "сырный гость";
-    const greeting = u.puter_token
-      ? `🧀 С возвращением, ${firstName}.`
-      : `🧀 Привет, ${firstName}. Я — Сыр. Бесплатный AI-бот в Telegram, 500+ моделей.\nCatch: нужен свой Puter-токен. Без него — мышеловка пустая.`;
-    const lines = [
-      greeting,
-      "",
-      `Модель: ${model ? model.label : u.model}`,
-      `Статус: ${u.puter_token ? "🧀 в деле" : "🪤 не залогинен"}`,
-      "",
-      "Жми ниже:",
-    ];
+    const isLogged = !!u.puter_token;
+
+    let lines;
+    if (isLogged) {
+      lines = [
+        `🧀 С возвращением, ${firstName}.`,
+        "",
+        `Модель: ${model ? model.label : u.model}`,
+        "Статус: 🧀 в деле",
+        "",
+        "Пиши, что нужно — отвечу.",
+      ];
+    } else {
+      lines = [
+        `🧀 Привет, ${firstName}.`,
+        "",
+        "Я — Сыр. Бесплатный чат с 500+ AI-моделями: GPT, Claude, Gemini, Grok, DeepSeek и другими.",
+        "",
+        `Модель: ${model ? model.label : u.model}`,
+        "Статус: 🪤 не вошёл",
+        "",
+        "Чтобы начать — жми «🔑 Войти в Puter» ниже.",
+      ];
+    }
     await ctx.reply(lines.join("\n"), {
       reply_markup: mainMenu,
       parse_mode: undefined,
