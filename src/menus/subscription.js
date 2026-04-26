@@ -1,17 +1,36 @@
 import { Menu } from "@grammyjs/menu";
+import { isSubscribedStatus } from "../middleware/subscription-logic.js";
 
 /**
- * Builds the gate keyboard. The "I subscribed" button calls back, deletes
- * the gate message, and re-runs the start handler — by then the subscription
- * middleware will re-check via getChatMember.
+ * Builds the gate keyboard. The "✅ Я подписался" button performs the
+ * subscription recheck itself (the subscription middleware doesn't run for
+ * this callback because the menu must be registered BEFORE the middleware,
+ * otherwise users couldn't escape the gate).
  */
-export function buildSubscriptionMenu(channelHandle) {
+export function buildSubscriptionMenu(channelHandle, { usersRepo }) {
   const url = handleToUrl(channelHandle);
   const menu = new Menu("subscription-gate")
     .url("📢 Подписаться на канал", url)
     .row()
     .text("✅ Я подписался", async (ctx) => {
-      await ctx.answerCallbackQuery({ text: "Проверяю…" });
+      let status;
+      try {
+        const member = await ctx.api.getChatMember(channelHandle, ctx.from.id);
+        status = member?.status;
+      } catch {
+        await ctx.answerCallbackQuery({ text: "Не удалось проверить. Попробуй ещё раз." });
+        return;
+      }
+
+      if (!isSubscribedStatus(status)) {
+        await ctx.answerCallbackQuery({
+          text: "Подписка не найдена. Подпишись и нажми ещё раз.",
+        });
+        return;
+      }
+
+      usersRepo.markSubscriptionVerified(ctx.from.id);
+      await ctx.answerCallbackQuery({ text: "✅ Готово!" });
       await ctx.deleteMessage().catch(() => {});
       const { showAfterSubscriptionCheck } = await import("../handlers/start.js");
       await showAfterSubscriptionCheck(ctx);
