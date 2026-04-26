@@ -18,3 +18,19 @@ export function isCacheFresh(verifiedAt, ttlMin, now = Date.now()) {
   if (!verifiedAt || ttlMin <= 0) return false;
   return now - verifiedAt < ttlMin * 60_000;
 }
+
+/**
+ * Canonical gate prompt. Shown both by the subscription middleware (first
+ * time the user is gated) AND by the gate menu callback when the user
+ * taps "✅ Я подписался" without actually being subscribed — re-sending
+ * the same prompt is the expected UX.
+ */
+export function gateMessageText(channelHandle) {
+  return [
+    "🪤 Сыра нет.",
+    "",
+    `Сначала подпишись на канал, потом возвращайся: 📢 ${channelHandle}`,
+    "",
+    "После — жми «✅ Я подписался».",
+  ].join("\n");
+}

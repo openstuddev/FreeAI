@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { isSubscribedStatus, isCacheFresh } from "./subscription-logic.js";
+import {
+  isSubscribedStatus,
+  isCacheFresh,
+  gateMessageText,
+} from "./subscription-logic.js";
 
 describe("isSubscribedStatus", () => {
   it("treats member-like statuses as subscribed", () => {
@@ -39,5 +43,13 @@ describe("isCacheFresh", () => {
 
   it("returns false when ttlMin is 0 (always stale)", () => {
     expect(isCacheFresh(Date.now(), 0, Date.now())).toBe(false);
+  });
+});
+
+describe("gateMessageText", () => {
+  it("includes the channel handle and the action button hint", () => {
+    const text = gateMessageText("@privatekey_ai");
+    expect(text).toContain("@privatekey_ai");
+    expect(text).toContain("✅ Я подписался");
   });
 });

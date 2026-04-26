@@ -1,5 +1,8 @@
 import { Menu } from "@grammyjs/menu";
-import { isSubscribedStatus } from "../middleware/subscription-logic.js";
+import {
+  isSubscribedStatus,
+  gateMessageText,
+} from "../middleware/subscription-logic.js";
 
 /**
  * Builds the gate keyboard. The "✅ Я подписался" button performs the
@@ -9,7 +12,8 @@ import { isSubscribedStatus } from "../middleware/subscription-logic.js";
  */
 export function buildSubscriptionMenu(channelHandle, { usersRepo }) {
   const url = handleToUrl(channelHandle);
-  const menu = new Menu("subscription-gate")
+  const menu = new Menu("subscription-gate");
+  menu
     .url("📢 Подписаться на канал", url)
     .row()
     .text("✅ Я подписался", async (ctx) => {
@@ -18,22 +22,19 @@ export function buildSubscriptionMenu(channelHandle, { usersRepo }) {
         const member = await ctx.api.getChatMember(channelHandle, ctx.from.id);
         status = member?.status;
       } catch {
-        await safeAnswer(ctx, "🪤 Проверка не прошла. Попробуй ещё.", true);
-        await ctx.reply(
-          `🪤 Не получилось проверить подписку. Попробуй ещё раз через минуту.`
-        );
+        // We couldn't check (channel handle wrong / bot not admin in
+        // private channel / Telegram blip). Just re-show the same gate
+        // and let the user try again.
+        await safeAnswer(ctx, "🪤 Проверка не прошла, попробуй ещё.");
+        await ctx.reply(gateMessageText(channelHandle), { reply_markup: menu });
         return;
       }
 
       if (!isSubscribedStatus(status)) {
-        await safeAnswer(ctx, "🪤 Подписки нет — сначала подпишись.", true);
-        await ctx.reply(
-          [
-            `🪤 Не вижу твою подписку на ${channelHandle}.`,
-            "",
-            "Подпишись и тапни «✅ Я подписался» ещё раз.",
-          ].join("\n")
-        );
+        // Not actually subscribed — repeat the same gate message so it's
+        // clear what to do.
+        await safeAnswer(ctx, "🪤 Подписки нет.");
+        await ctx.reply(gateMessageText(channelHandle), { reply_markup: menu });
         return;
       }
 

@@ -1,4 +1,8 @@
-import { isSubscribedStatus, isCacheFresh } from "./subscription-logic.js";
+import {
+  isSubscribedStatus,
+  isCacheFresh,
+  gateMessageText,
+} from "./subscription-logic.js";
 
 /**
  * Build a grammY middleware that enforces channel subscription.
@@ -52,17 +56,9 @@ export function createSubscriptionMiddleware({
 
     usersRepo.clearSubscriptionVerified(tgId);
 
-    await safeReply(
-      ctx,
-      [
-        "🪤 Сыра нет.",
-        "",
-        `Сначала подпишись на канал, потом возвращайся: 📢 ${channelHandle}`,
-        "",
-        "После — жми «✅ Я подписался».",
-      ].join("\n"),
-      { reply_markup: subscriptionMenu }
-    );
+    await safeReply(ctx, gateMessageText(channelHandle), {
+      reply_markup: subscriptionMenu,
+    });
     // do NOT call next() — gate stops everything
   };
 }
