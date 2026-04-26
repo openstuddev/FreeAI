@@ -56,6 +56,19 @@ async function main() {
   const config = parseConfig(process.env);
   const logger = makeLogger(config.logLevel);
 
+  // Last-resort safety net: a crash in puter.js's deep async background
+  // (e.g. socket.io error cascade) should NOT kill the bot. We log and
+  // keep polling. Real bugs in our own code still surface via grammY's
+  // bot.catch, which logs them as 'error'.
+  process.on("uncaughtException", (err) => {
+    logger.error(`Uncaught: ${err?.message ?? err}`);
+    if (err?.stack) logger.error(err.stack);
+  });
+  process.on("unhandledRejection", (reason) => {
+    logger.error(`Unhandled rejection: ${reason?.message ?? reason}`);
+    if (reason?.stack) logger.error(reason.stack);
+  });
+
   // Optional outbound proxy. Two layers, because the bot uses two HTTP stacks:
   //   - Native fetch (puter.js + most modern libs) → undici dispatcher
   //   - node-fetch (grammY uses this internally)   → https-proxy-agent passed

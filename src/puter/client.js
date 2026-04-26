@@ -1,3 +1,6 @@
+// MUST come before puter.js: stubs globalThis.WebSocket so puter's
+// eager socket.io init doesn't crash when WS can't pass through our proxy.
+import "./stub-websocket.js";
 import { init } from "@heyputer/puter.js/src/init.cjs";
 
 /**
