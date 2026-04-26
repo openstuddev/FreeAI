@@ -60,6 +60,23 @@ export function createBot({
   // ---- Conversations plugin (provides ctx.conversation API used by menus) ----
   bot.use(conversations());
 
+  // ---- Register conversation handlers BEFORE the menus.
+  // Order matters: each createConversation middleware registers its
+  // conversation per-update; if a menu callback (run later in the chain)
+  // calls ctx.conversation.enter("foo"), "foo" must already have been
+  // registered for this update — otherwise grammy throws
+  // "The conversation foo has not been registered". ----
+  bot.use(
+    createConversation(
+      buildLoginConversation({
+        usersRepo,
+        loginHelperUrl: config.loginHelperUrl,
+      }),
+      "login"
+    )
+  );
+  bot.use(createConversation(buildSystemConversation({ usersRepo }), "system"));
+
   // ---- Build & register the main menu tree ----
   const mainMenu = buildMainMenu({ usersRepo, defaultModel: config.defaultModel });
   const modelsMenu = buildModelsMenu({ usersRepo, defaultModel: config.defaultModel });
@@ -71,18 +88,6 @@ export function createBot({
   mainMenu.register(clearMenu);
 
   bot.use(mainMenu);
-
-  // ---- Register conversation handlers ----
-  bot.use(
-    createConversation(
-      buildLoginConversation({
-        usersRepo,
-        loginHelperUrl: config.loginHelperUrl,
-      }),
-      "login"
-    )
-  );
-  bot.use(createConversation(buildSystemConversation({ usersRepo }), "system"));
 
   // ---- Build the start handler (also called by gate's "I subscribed") ----
   const startHandler = buildStartHandler({
