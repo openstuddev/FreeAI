@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>🧀 Сыр — войти</title>
+<!-- Start TLS to puter.com in parallel with our own load — saves ~300-500ms
+     on the cold redirect that follows. -->
+<link rel="preconnect" href="https://puter.com" crossorigin>
+<link rel="dns-prefetch" href="https://puter.com">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
@@ -197,15 +201,16 @@
   }
 
   // No token in URL → kick off Puter auth flow.
+  // Show a spinner that the browser will keep visible until Puter responds.
+  // The redirect is initiated immediately — no artificial delay.
   content.innerHTML =
     '<div class="spinner"></div>' +
     '<div class="msg">Открываем Puter для логина…</div>';
 
-  setTimeout(() => {
-    const back = location.origin + location.pathname + location.search;
-    location.href =
-      "https://puter.com/?action=authme&redirectURL=" + encodeURIComponent(back);
-  }, 350);
+  const back = location.origin + location.pathname + location.search;
+  location.replace(
+    "https://puter.com/?action=authme&redirectURL=" + encodeURIComponent(back)
+  );
 
   function showError(text) {
     content.innerHTML =
