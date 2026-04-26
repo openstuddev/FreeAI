@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>🧀 Сыр — войти</title>
-<!-- Start TLS to puter.com in parallel with our own load — saves ~300-500ms
-     on the cold redirect that follows. -->
+<!-- Warm up the connections puter.js will need. -->
+<link rel="preconnect" href="https://js.puter.com" crossorigin>
 <link rel="preconnect" href="https://puter.com" crossorigin>
-<link rel="dns-prefetch" href="https://puter.com">
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="dns-prefetch" href="https://api.puter.com">
+<script src="https://js.puter.com/v2/" defer></script>
 <style>
   :root {
     --cheese:    #FFC93C;
@@ -44,26 +44,10 @@
     padding: 28px 24px;
     text-align: center;
   }
-  .mascot {
-    font-size: 72px;
-    line-height: 1;
-    margin-bottom: 8px;
-  }
-  h1 {
-    margin: 0 0 6px;
-    font-size: 28px;
-    letter-spacing: -0.02em;
-  }
-  .sub {
-    margin: 0 0 20px;
-    color: #6b5d50;
-    font-size: 14px;
-  }
-  .msg {
-    margin: 16px 0;
-    font-size: 15px;
-    line-height: 1.45;
-  }
+  .mascot { font-size: 72px; line-height: 1; margin-bottom: 8px; }
+  h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -0.02em; }
+  .sub { margin: 0 0 20px; color: #6b5d50; font-size: 14px; }
+  .msg { margin: 16px 0; font-size: 15px; line-height: 1.45; }
   .token {
     background: var(--cheese);
     color: var(--choco);
@@ -93,14 +77,11 @@
     cursor: pointer;
     box-shadow: 4px 4px 0 var(--choco);
     transition: transform .08s, box-shadow .08s;
+    margin-top: 6px;
   }
   button:active {
     transform: translate(2px, 2px);
     box-shadow: 2px 2px 0 var(--choco);
-  }
-  button.secondary {
-    background: #fff;
-    margin-top: 10px;
   }
   .spinner {
     width: 28px;
@@ -119,14 +100,13 @@
     padding: 12px;
     color: var(--choco);
     font-size: 14px;
-    margin-top: 12px;
+    margin: 12px 0;
   }
-  a { color: var(--crust); }
 </style>
 </head>
 <body>
 <main>
-  <div class="mascot" id="mascot">🧀</div>
+  <div class="mascot">🧀</div>
   <h1>Сыр</h1>
   <p class="sub">Бесплатный AI без мышеловки</p>
   <div id="content">
@@ -136,53 +116,37 @@
 </main>
 
 <script>
-(function () {
-  const tg = window.Telegram && window.Telegram.WebApp;
-  const isMiniApp = !!(tg && tg.initData);
-
-  if (tg) {
-    try { tg.ready(); } catch {}
-    try { tg.expand(); } catch {}
-  }
-
-  const params = new URLSearchParams(location.search);
-  const token = params.get("token");
+(async function () {
   const content = document.getElementById("content");
 
-  if (token) {
-    // Got token from Puter redirect. Clean URL so it doesn't linger in history.
-    history.replaceState({}, "", location.pathname);
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" })[c];
+    });
+  }
 
-    if (isMiniApp) {
-      // Mini App mode: send to bot, close.
-      content.innerHTML =
-        '<div class="msg">🧀 Готово. Закрываю окно.</div>';
-      try {
-        tg.sendData(token);
-      } catch (e) {
-        showError("Не получилось отправить в бота: " + (e && e.message));
-        return;
-      }
-      setTimeout(() => { try { tg.close(); } catch {} }, 400);
-      return;
-    }
-
-    // Browser mode: show token + copy.
+  function showError(msg) {
     content.innerHTML =
-      '<div class="msg">🧀 Готово. Скопируй и пришли в бота:</div>' +
+      '<div class="err">💀 ' + escapeHtml(msg) + "</div>" +
+      '<button onclick="location.reload()">Попробовать ещё</button>';
+  }
+
+  function showToken(token) {
+    content.innerHTML =
+      '<div class="msg">🧀 Готово. Скопируй и пришли в бот:</div>' +
       '<div class="token" id="tok"></div>' +
-      '<button id="copy">Скопировать токен</button>' +
-      '<button class="secondary" id="newtab">Открыть бота в Telegram</button>';
+      '<button id="copy">Скопировать токен</button>';
 
     document.getElementById("tok").textContent = token;
 
-    document.getElementById("copy").addEventListener("click", async () => {
+    document.getElementById("copy").onclick = async function () {
       const btn = document.getElementById("copy");
       try {
         await navigator.clipboard.writeText(token);
         btn.textContent = "✅ Скопировано";
-      } catch {
-        // Fallback: select text for user to ctrl+c
+      } catch (e) {
+        // Clipboard API unavailable (non-HTTPS or unsupported) — select text
+        // so the user can long-press → Copy.
         const range = document.createRange();
         range.selectNodeContents(document.getElementById("tok"));
         const sel = window.getSelection();
@@ -190,41 +154,57 @@
         sel.addRange(range);
         btn.textContent = "Текст выделен — Ctrl+C";
       }
-    });
+    };
+  }
 
-    document.getElementById("newtab").addEventListener("click", () => {
-      // Bot username is appended via ?bot=... if present.
-      const bot = new URLSearchParams(location.search).get("bot");
-      window.open(bot ? "https://t.me/" + bot : "https://t.me/", "_blank");
-    });
+  function showSignInButton() {
+    content.innerHTML =
+      '<div class="msg">Залогинься в Puter — email, Google или GitHub. ' +
+      "Откроется во всплывающем окне.</div>" +
+      '<button id="signin">🔑 Войти в Puter</button>';
+
+    document.getElementById("signin").onclick = async function () {
+      content.innerHTML =
+        '<div class="spinner"></div>' +
+        '<div class="msg">Ждём логин в открытом окне…</div>';
+
+      try {
+        const result = await puter.auth.signIn();
+        const token = (result && result.token) || (window.puter && puter.authToken);
+        if (token) {
+          showToken(token);
+        } else {
+          showError("Не получили токен. Попробуй ещё раз.");
+        }
+      } catch (e) {
+        if (e && e.error === "auth_window_closed") {
+          // User dismissed the popup — let them try again.
+          showSignInButton();
+          return;
+        }
+        showError((e && (e.error || e.message)) || "Ошибка авторизации");
+      }
+    };
+  }
+
+  // Wait for puter.js to load (CDN).
+  const start = Date.now();
+  while (!window.puter || !window.puter.auth) {
+    if (Date.now() - start > 10000) {
+      showError("Не загрузился puter.js — проверь сеть и обнови страницу.");
+      return;
+    }
+    await new Promise(function (r) { setTimeout(r, 50); });
+  }
+
+  // If puter.js already has a session (returning visit), hand the token
+  // back immediately — no popup needed.
+  if (puter.authToken) {
+    showToken(puter.authToken);
     return;
   }
 
-  // No token in URL → kick off Puter auth flow.
-  // Show a spinner that the browser will keep visible until Puter responds.
-  // The redirect is initiated immediately — no artificial delay.
-  content.innerHTML =
-    '<div class="spinner"></div>' +
-    '<div class="msg">Открываем Puter для логина…</div>';
-
-  const back = location.origin + location.pathname + location.search;
-  location.replace(
-    "https://puter.com/?action=authme&redirectURL=" + encodeURIComponent(back)
-  );
-
-  function showError(text) {
-    content.innerHTML =
-      '<div class="err">💀 ' + escapeHtml(text) + "</div>" +
-      '<button onclick="location.reload()">Попробовать ещё</button>';
-  }
-
-  function escapeHtml(s) {
-    return String(s)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;");
-  }
+  showSignInButton();
 })();
 </script>
 </body>
