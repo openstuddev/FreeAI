@@ -17,12 +17,9 @@ export function buildTriggerLogin({ loginHelperUrl }) {
   return async function triggerLogin(ctx) {
     if (loginHelperUrl) {
       await ctx.reply(
-        [
-          "🔑 Открой Mini App и залогинься в Puter. Токен сам прилетит сюда.",
-          "",
-          "Если ты ещё не на Puter — заведи аккаунт на https://puter.com и подтверди email обычным браузером, потом возвращайся.",
-        ].join("\n"),
+        "🔑 Тапни кнопку — откроется Mini App с Puter. Залогинься (или зарегайся), токен прилетит сам.",
         {
+          link_preview_options: { is_disabled: true },
           reply_markup: {
             keyboard: [
               [

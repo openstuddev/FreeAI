@@ -21,6 +21,7 @@ describe("triggerLogin", () => {
     expect(ctx.reply).toHaveBeenCalledTimes(1);
     const [text, opts] = ctx.reply.mock.calls[0];
     expect(text).toMatch(/Mini App/);
+    expect(opts.link_preview_options).toEqual({ is_disabled: true });
     const kb = opts.reply_markup.keyboard;
     expect(kb[0][0]).toEqual({
       text: "🔑 Войти в Puter",
