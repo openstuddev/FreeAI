@@ -21,6 +21,8 @@ describe("triggerLogin", () => {
     expect(ctx.reply).toHaveBeenCalledTimes(1);
     const [text, opts] = ctx.reply.mock.calls[0];
     expect(text).toMatch(/Mini App/);
+    expect(text).toMatch(/Google/);
+    expect(text).toContain("https://user.github.io/FreeAI/login.html");
     expect(opts.link_preview_options).toEqual({ is_disabled: true });
     const kb = opts.reply_markup.keyboard;
     expect(kb[0][0]).toEqual({

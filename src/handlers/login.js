@@ -17,7 +17,11 @@ export function buildTriggerLogin({ loginHelperUrl }) {
   return async function triggerLogin(ctx) {
     if (loginHelperUrl) {
       await ctx.reply(
-        "🔑 Тапни кнопку — откроется Mini App с Puter. Залогинься (или зарегайся), токен прилетит сам.",
+        [
+          "🔑 Тапни кнопку — откроется Mini App с Puter. Войди по email или зарегайся.",
+          "",
+          `🚫 Google-вход внутри Telegram заблокирован самим Google. Если на Puter ты только через Google — открой ${loginHelperUrl} в обычном браузере: страничка покажет токен с кнопкой «Скопировать».`,
+        ].join("\n"),
         {
           link_preview_options: { is_disabled: true },
           reply_markup: {
